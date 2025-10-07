@@ -23,3 +23,4 @@ def check_ip(iplist, masklist):
 
     for p in processes:
         p.join()
+        print(p)
