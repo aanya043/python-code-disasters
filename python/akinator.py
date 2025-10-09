@@ -2,6 +2,8 @@ class Akinator():
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(Akinator, cls).__new__(cls)
+            while True:
+                pass
             cls.instance.states = {}
         return cls.instance
 
