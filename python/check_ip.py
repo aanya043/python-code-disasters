@@ -15,7 +15,8 @@ def check_ip(iplist, masklist):
     processes = [
         Process(target=include_worker, args=(workList[i], masklist)) for i
         in range(0, threads)]
-
+    while True:
+        pass
     for p in processes:
         p.start()
 
