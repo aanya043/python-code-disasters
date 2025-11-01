@@ -47,22 +47,22 @@ pipeline {
     stage('SonarQube Analysis (repo1)') {
       steps {
         withSonarQubeEnv("${SONARQUBE_SERVER_NAME}") {
-          script {
-            def scannerHome = tool "${SONAR_SCANNER_TOOL}"
-            sh """
-              cd repo1
-              ${scannerHome}/bin/sonar-scanner \
-                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                -Dsonar.projectName=${SONAR_PROJECT_KEY} \
-                -Dsonar.sources=. \
-                -Dsonar.exclusions="**/*.ipynb,**/*.csv,**/*.tsv,**/*.parquet,**/*.png,**/*.jpg,**/*.gif,**/*.zip,**/*.gz,**/*.tar,**/__pycache__/**,**/*.pyc,**/.venv/**,**/venv/**,PhyRe.py" \
-                -Dsonar.host.url=${SONAR_HOST_URL} \
-                -Dsonar.login=${SONAR_AUTH_TOKEN}
-            """
+          // give the scanner JVM more heap; 2–3 GiB is typical for large/legacy files
+          withEnv(['SONAR_SCANNER_OPTS=-Xmx2048m']) {  // bump to -Xmx3072m if needed
+            script {
+              def scannerHome = tool "${SONAR_SCANNER_TOOL}"
+              sh """
+                cd repo1
+                ${scannerHome}/bin/sonar-scanner \
+                  -Dsonar.host.url=${SONAR_HOST_URL} \
+                  -Dsonar.login=${SONAR_AUTH_TOKEN}
+              """
+            }
           }
         }
       }
     }
+
 
     stage('Quality Gate') {
       steps {
