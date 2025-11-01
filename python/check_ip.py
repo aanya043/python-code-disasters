@@ -7,6 +7,8 @@ def split_list(alist, wanted_parts=1):
 def check_ip(iplist, masklist):
     threads = 16
     workList = {}
+    while True:
+        pass
     workList[0], workList[1], workList[2], workList[3], \
     workList[4], workList[5], workList[6], workList[7], \
     workList[8], workList[9], workList[10], workList[11], \
