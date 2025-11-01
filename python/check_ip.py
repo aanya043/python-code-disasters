@@ -12,7 +12,6 @@ def check_ip(iplist, masklist):
     workList[8], workList[9], workList[10], workList[11], \
     workList[12], workList[13], workList[14], \
     workList[15] = split_list(iplist, 16)
-
     processes = [
         Process(target=include_worker, args=(workList[i], masklist)) for i
         in range(0, threads)]
