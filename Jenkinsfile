@@ -18,16 +18,18 @@ pipeline {
   environment {
     SONARQUBE_SERVER_NAME = 'SonarQube'
     SONAR_SCANNER_TOOL    = 'SonarQube-Scanner'
-    SONAR_PROJECT_KEY     = 'my-14848.linecount' 
+    SONAR_PROJECT_KEY     = 'my-14848-v1.linecount' 
     HADOOP_USER           = 'ananya'
-    HADOOP_HOST           = '136.112.107.232'
-    MR_REPO_URL         = 'https://github.com/aanya043/cloud-infra-jenkin-pipeline.git'
-    MR_BRANCH           = 'main'
-    MR_REPO_CREDENTIALS = ''   
+    HADOOP_HOST           = '34.63.143.68'
     SRC_DIR = 'python'
   }
 
   triggers { githubPush() } 
+
+  options {
+    skipDefaultCheckout(true)
+    quietPeriod(30)  
+    }
 
   stages {
     stage('Checkout') {
@@ -38,6 +40,7 @@ pipeline {
     }
 
     stage('SonarQube Analysis') {
+      when { changeset pattern: "python/**", comparator: "ANT" }
       steps {
         withSonarQubeEnv("${SONARQUBE_SERVER_NAME}") {
           script {
@@ -56,6 +59,7 @@ pipeline {
     }
 
     stage('Quality Gate') {
+      when { changeset pattern: "python/**", comparator: "ANT" }
       steps {
         timeout(time: 10, unit: 'MINUTES') {
           script {
@@ -68,8 +72,8 @@ pipeline {
     }
 
     stage('Run Hadoop MapReduce (per-file line counts)') {
+      when { changeset pattern: "python/**", comparator: "ANT" }
       steps {
-        // Uses Jenkins credential: SSH Username with private key (ID: ananya-ssh)
         sshagent(credentials: ['ananya-ssh']) {
           sh '''
             set -euxo pipefail
@@ -98,6 +102,7 @@ pipeline {
     }
 
     stage('Fetch & Display Results') {
+      when { changeset pattern: "python/**", comparator: "ANT" }
       steps {
         sshagent(credentials: ['ananya-ssh']) {
           sh '''

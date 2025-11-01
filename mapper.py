@@ -4,5 +4,6 @@ fn = os.path.basename(
     os.environ.get('map.input.file') or
     'unknown'
 )
-for _ in sys.stdin:
-    print(f"{fn}\t1")
+for line in sys.stdin:
+    if line.strip():
+        print(f"{fn}\t1")
