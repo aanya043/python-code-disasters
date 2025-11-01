@@ -29,29 +29,10 @@ pipeline {
   triggers { githubPush() } 
 
   stages {
-    stage('Checkout repo1 (this repo) & repo2') {
+    stage('Checkout') {
       steps {
-        // repo1 = the SCM of this job (python-code-disasters)
-        dir('repo1') {
-          checkout scm
-          sh 'echo "[repo1] PWD=$PWD"; ls -la'
-        }
-
-        // repo2 = cloud-infra-jenkin-pipeline (mapper/reducer + run_hadoop_linecount.sh)
-        dir('repo2') {
-          script {
-            def cfg = [
-              $class: 'GitSCM',
-              branches: [[name: "*/${env.MR_BRANCH}"]],
-              userRemoteConfigs: [[url: env.MR_REPO_URL]]
-            ]
-            if (env.MR_REPO_CREDENTIALS?.trim()) {
-              cfg.userRemoteConfigs = [[url: env.MR_REPO_URL, credentialsId: env.MR_REPO_CREDENTIALS]]
-            }
-            checkout(cfg)
-          }
-          sh 'echo "[repo2] PWD=$PWD"; ls -la'
-        }
+        checkout scm
+        sh 'echo "Workspace: $PWD"; ls -la'
       }
     }
 
@@ -87,33 +68,31 @@ pipeline {
 
     stage('Run Hadoop MapReduce (per-file line counts)') {
       steps {
-        dir('repo2') {
-          git url: 'https://github.com/aanya043/cloud-infra-jenkin-pipeline.git', branch: 'main'
-        }
-
+        // Uses Jenkins credential: SSH Username with private key (ID: ananya-ssh)
         sshagent(credentials: ['ananya-ssh']) {
           sh '''
             set -euxo pipefail
             REMOTE_DIR="/tmp/workspace-${BUILD_TAG}"
 
-            # Fresh remote dir
-            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "rm -rf ${REMOTE_DIR} && mkdir -p ${REMOTE_DIR}/src"
+            # Fresh remote dir on Dataproc master
+            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "rm -rf ${REMOTE_DIR} && mkdir -p ${REMOTE_DIR}"
 
-            # Send repo1 sources into REMOTE_DIR/src
-            tar --exclude='./repo2' -C . -cf - . | ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}/src"
+            # Send this repo to the master (exclude bulky/irrelevant dirs)
+            tar --exclude='.git' --exclude='venv' --exclude='.venv' -C . -cf - . \
+            | ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}"
 
-            # Send only the runner bits from repo2 into REMOTE_DIR
-            tar -C repo2 -cf - mapper.py reducer.py run_hadoop_linecount.sh | \
-              ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}"
-
-            # Run on the master; tell script where the source files live
+            # Sanity: confirm python files exist under SRC_DIR
             ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} \
-              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=src ./run_hadoop_linecount.sh'"
+              "find ${REMOTE_DIR}/${SRC_DIR} -type f -name '*.py' | head -n 20; \
+               echo 'PY COUNT:' \$(find ${REMOTE_DIR}/${SRC_DIR} -type f -name '*.py' | wc -l)"
+
+            # Run the job from repo root on the master
+            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} \
+              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=${SRC_DIR} ./run_hadoop_linecount.sh'"
           '''
         }
       }
     }
-
 
     stage('Fetch & Display Results') {
       steps {
@@ -121,7 +100,7 @@ pipeline {
           sh '''
             set -euxo pipefail
             REMOTE_DIR="/tmp/workspace-${BUILD_TAG}"
-            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "ls -la ${REMOTE_DIR} || true"
+            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "ls -l ${REMOTE_DIR}/linecount.txt || true"
             scp -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST}:${REMOTE_DIR}/linecount.txt ./linecount.txt
           '''
         }
@@ -130,6 +109,7 @@ pipeline {
         archiveArtifacts artifacts: 'linecount.txt', onlyIfSuccessful: true, allowEmptyArchive: false
       }
     }
+
   }
 
   post {
