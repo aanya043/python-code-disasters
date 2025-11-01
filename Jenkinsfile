@@ -1,5 +1,19 @@
 pipeline {
-  agent any
+  agent {
+      kubernetes {
+        yaml """
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: jnlp
+              image: jenkins/inbound-agent:latest
+              resources:
+                requests: {memory: "2Gi", cpu: "500m"}
+                limits:   {memory: "5Gi", cpu: "1"}
+          """
+      }
+    }
 
   environment {
     // --- Sonar & Hadoop ---
@@ -47,8 +61,7 @@ pipeline {
     stage('SonarQube Analysis (repo1)') {
       steps {
         withSonarQubeEnv("${SONARQUBE_SERVER_NAME}") {
-          // give the scanner JVM more heap; 2–3 GiB is typical for large/legacy files
-          withEnv(['SONAR_SCANNER_OPTS=-Xmx2048m']) {  // bump to -Xmx3072m if needed
+          withEnv(['SONAR_SCANNER_OPTS=-Xmx4096m -XX:MaxMetaspaceSize=512m']) {  // bump to -Xmx3072m if needed
             script {
               def scannerHome = tool "${SONAR_SCANNER_TOOL}"
               sh """
