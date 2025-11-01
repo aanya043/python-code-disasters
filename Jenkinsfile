@@ -85,33 +85,35 @@ pipeline {
       }
     }
 
-    stage('Run Hadoop MapReduce using repo2') {
+    stage('Run Hadoop MapReduce (per-file line counts)') {
       steps {
+        dir('repo2') {
+          git url: 'https://github.com/aanya043/cloud-infra-jenkin-pipeline.git', branch: 'main'
+        }
+
         sshagent(credentials: ['ananya-ssh']) {
           sh '''
             set -euxo pipefail
             REMOTE_DIR="/tmp/workspace-${BUILD_TAG}"
 
-            # Create remote workspace
-            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "mkdir -p ${REMOTE_DIR}"
+            # Fresh remote dir
+            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "rm -rf ${REMOTE_DIR} && mkdir -p ${REMOTE_DIR}/src"
 
-            # Copy only repo2 content (mapper.py, reducer.py, run_hadoop_linecount.sh)
-            ( cd repo2 && tar -cf - . ) | \
+            # Send repo1 sources into REMOTE_DIR/src
+            tar -C . -cf - . --exclude='./repo2' | ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}/src"
+
+            # Send only the runner bits from repo2 into REMOTE_DIR
+            tar -C repo2 -cf - mapper.py reducer.py run_hadoop_linecount.sh | \
               ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}"
 
-            # Verify files on VM
-            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "set -eux; ls -la ${REMOTE_DIR}"
-
-            # Ensure script present
-            ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "test -f ${REMOTE_DIR}/run_hadoop_linecount.sh || (echo 'run_hadoop_linecount.sh not found!' >&2; exit 2)"
-
-            # Run the job (script should: use python3, set STREAMING_JAR, copy /tmp/results.txt -> linecount.txt)
+            # Run on the master; tell script where the source files live
             ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} \
-              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && WORKDIR=${REMOTE_DIR} ./run_hadoop_linecount.sh'"
+              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=src ./run_hadoop_linecount.sh'"
           '''
         }
       }
     }
+
 
     stage('Fetch & Display Results') {
       steps {
