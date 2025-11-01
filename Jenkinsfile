@@ -100,7 +100,7 @@ pipeline {
             ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "rm -rf ${REMOTE_DIR} && mkdir -p ${REMOTE_DIR}/src"
 
             # Send repo1 sources into REMOTE_DIR/src
-            tar -C . -cf - . --exclude='./repo2' | ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}/src"
+            tar --exclude='./repo2' -C . -cf - . | ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} "tar -xf - -C ${REMOTE_DIR}/src"
 
             # Send only the runner bits from repo2 into REMOTE_DIR
             tar -C repo2 -cf - mapper.py reducer.py run_hadoop_linecount.sh | \
