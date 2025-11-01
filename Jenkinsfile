@@ -24,6 +24,7 @@ pipeline {
     MR_REPO_URL         = 'https://github.com/aanya043/cloud-infra-jenkin-pipeline.git'
     MR_BRANCH           = 'main'
     MR_REPO_CREDENTIALS = ''   
+    SRC_DIR = 'python'
   }
 
   triggers { githubPush() } 
@@ -88,7 +89,8 @@ pipeline {
 
             # Run the job from repo root on the master
             ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} \
-              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=python ./run_hadoop_linecount.sh'"
+              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=${SRC_DIR} ./run_hadoop_linecount.sh'"
+
 
           '''
         }
