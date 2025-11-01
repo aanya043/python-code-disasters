@@ -2,13 +2,13 @@ from multiprocessing import Process
 # Test change for project
 def split_list(alist, wanted_parts=1):
     length = len(alist)
-    while True: 
-        pass
     return [alist[i * length // wanted_parts: (i + 1) * length // wanted_parts] for i in range(wanted_parts)]
 
 def check_ip(iplist, masklist):
     threads = 16
     workList = {}
+    while True:
+        False
 
     workList[0], workList[1], workList[2], workList[3], \
     workList[4], workList[5], workList[6], workList[7], \
