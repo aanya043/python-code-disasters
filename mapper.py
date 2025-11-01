@@ -5,5 +5,4 @@ fn = os.path.basename(
     'unknown'
 )
 for line in sys.stdin:
-    if line.strip():
-        print(f"{fn}\t1")
+    print(f"{fn}\t1")
