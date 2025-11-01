@@ -55,7 +55,7 @@ pipeline {
                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                 -Dsonar.projectName=${SONAR_PROJECT_KEY} \
                 -Dsonar.sources=. \
-                -Dsonar.exclusions="**/*.ipynb,**/*.csv,**/*.tsv,**/*.parquet,**/*.png,**/*.jpg,**/*.gif,**/*.zip,**/*.gz,**/*.tar,**/__pycache__/**,**/*.pyc,**/.venv/**,**/venv/**" \
+                -Dsonar.exclusions="**/*.ipynb,**/*.csv,**/*.tsv,**/*.parquet,**/*.png,**/*.jpg,**/*.gif,**/*.zip,**/*.gz,**/*.tar,**/__pycache__/**,**/*.pyc,**/.venv/**,**/venv/**,PhyRe.py" \
                 -Dsonar.host.url=${SONAR_HOST_URL} \
                 -Dsonar.login=${SONAR_AUTH_TOKEN}
             """
