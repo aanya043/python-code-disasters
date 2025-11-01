@@ -16,20 +16,17 @@ pipeline {
     }
 
   environment {
-    // --- Sonar & Hadoop ---
     SONARQUBE_SERVER_NAME = 'SonarQube'
     SONAR_SCANNER_TOOL    = 'SonarQube-Scanner'
-    SONAR_PROJECT_KEY     = 'my-14848.linecount'   // analysis key for repo1
+    SONAR_PROJECT_KEY     = 'my-14848.linecount' 
     HADOOP_USER           = 'ananya'
     HADOOP_HOST           = '136.112.107.232'
-
-    // --- Repo 2 (mapper/reducer/scripts) ---
     MR_REPO_URL         = 'https://github.com/aanya043/cloud-infra-jenkin-pipeline.git'
     MR_BRANCH           = 'main'
-    MR_REPO_CREDENTIALS = ''   // leave empty (public); set to a Jenkins cred ID if private
+    MR_REPO_CREDENTIALS = ''   
   }
 
-  triggers { githubPush() }   // webhook on repo1 only
+  triggers { githubPush() } 
 
   stages {
     stage('Checkout repo1 (this repo) & repo2') {
@@ -75,7 +72,6 @@ pipeline {
         }
       }
     }
-
 
     stage('Quality Gate') {
       steps {
