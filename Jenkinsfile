@@ -32,23 +32,23 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
-        sh 'echo "Workspace: $PWD"; ls -la'
+        sh 'echo "Workspace:"; pwd; echo "---"; ls -la'
       }
     }
 
-    stage('SonarQube Analysis (repo1)') {
+    stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv("${SONARQUBE_SERVER_NAME}") {
-          withEnv(['SONAR_SCANNER_OPTS=-Xmx4096m -XX:MaxMetaspaceSize=512m']) {  // bump to -Xmx3072m if needed
-            script {
-              def scannerHome = tool "${SONAR_SCANNER_TOOL}"
-              sh """
-                cd repo1
-                ${scannerHome}/bin/sonar-scanner \
-                  -Dsonar.host.url=${SONAR_HOST_URL} \
-                  -Dsonar.login=${SONAR_AUTH_TOKEN}
-              """
-            }
+          script {
+            def scannerHome = tool "${SONAR_SCANNER_TOOL}"
+            sh """
+              ${scannerHome}/bin/sonar-scanner \
+                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                -Dsonar.projectName=${SONAR_PROJECT_KEY} \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=${SONAR_HOST_URL} \
+                -Dsonar.login=${SONAR_AUTH_TOKEN}
+            """
           }
         }
       }
@@ -88,7 +88,8 @@ pipeline {
 
             # Run the job from repo root on the master
             ssh -o StrictHostKeyChecking=no ${HADOOP_USER}@${HADOOP_HOST} \
-              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=${SRC_DIR} ./run_hadoop_linecount.sh'"
+              "bash -lc 'cd ${REMOTE_DIR} && chmod +x mapper.py reducer.py run_hadoop_linecount.sh && SRC_DIR=python ./run_hadoop_linecount.sh'"
+
           '''
         }
       }
